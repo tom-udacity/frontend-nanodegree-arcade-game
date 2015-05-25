@@ -99,7 +99,7 @@ var Engine = (function(global) {
      */
     function updateEntities(dt) {
         allEnemies.forEach(function(enemy) {
-            enemy.update(dt);
+            enemy.update(dt, player);
         });
         player.update();
     }
@@ -173,9 +173,10 @@ var Engine = (function(global) {
      * on your enemy and player entities within app.js
      */
     function renderEntities() {
-        allExtraObjects.forEach(function(extraObj) {
-            extraObj.render(ctx);
-        });
+//        allExtraObjects.forEach(function(extraObj) {
+//            extraObj.render(ctx);
+//        });
+        RandomObjectManager.render(ctx);
 
         /*
          * Loop through all of the objects within the allEnemies array and call
