@@ -4,12 +4,12 @@
 var MAX_COLUMNS = 4;
 var MAX_ROWS = 5;
 var BLOCK_WIDTH = 101;
-var BLOCK_HEIGHT = 83; // 171
+var BLOCK_HEIGHT = 83;
 var CANVAS_WIDTH = ((MAX_ROWS + 1) * BLOCK_WIDTH);
 var SCORE = 0;
 
 // Enemies our player must avoid
-var Enemy = function () {
+var Enemy = function() {
     // Variables applied to each of our instances go here,
     // we've provided one for you to get started
 
@@ -24,13 +24,14 @@ var Enemy = function () {
     this.x = 0;
     this.row = 0;
     this.speed = 0;
-    this.maxDistance = 0; // moves the enemy off canvas for a random distance,
-    // acting as a delay before resetting
+    
+    // maxDistance moves the enemy off canvas for a random distance, acting as a delay before resetting
+    this.maxDistance = 0;
 
     this.reset();
 };
 
-Enemy.prototype.reset = function () {
+Enemy.prototype.reset = function() {
     this.x = 0;
     this.row = Math.floor((Math.random() * 3) + 1);
     this.speed = Math.floor((Math.random() * (this.maxSpeed - this.minSpeed)) + this.minSpeed);
@@ -39,7 +40,7 @@ Enemy.prototype.reset = function () {
 
 // Update the enemy's position, required method for game
 // Parameter: dt, a time delta between ticks
-Enemy.prototype.update = function (dt) {
+Enemy.prototype.update = function(dt, player) {
     // You should multiply any movement by the dt parameter
     // which will ensure the game runs at the same speed for
     // all computers.
@@ -50,24 +51,24 @@ Enemy.prototype.update = function (dt) {
         this.reset();
     }
 
-    this.detectCollisions();
+    this.detectCollisions(player);
 
 };
 
 // Draw the enemy on the screen, required method for game
-Enemy.prototype.render = function (ctx) {
+Enemy.prototype.render = function(ctx) {
     ctx.drawImage(Resources.get(this.sprite), this.x, (this.row * BLOCK_HEIGHT) + this.heightOffset);
 };
 
 // Detect collisions
-Enemy.prototype.detectCollisions = function () {
+Enemy.prototype.detectCollisions = function(player) {
     if (this.row === player.row) {
         var playerX = player.column * BLOCK_WIDTH;
         var xDiff = Math.abs(playerX - this.x);
         if (xDiff < 74) {
             document.getElementById('collision_sound').play();
             SCORE -= 25;
-            resetGame();
+            player.reset();
         }
     }
 };
@@ -75,30 +76,30 @@ Enemy.prototype.detectCollisions = function () {
 // Now write your own player class
 // This class requires an update(), render() and
 // a handleInput() method.
-var Player = function () {
+var Player = function() {
     this.heightOffset = -35;
     this.column = 2;
     this.row = 4;
     this.sprite = 'images/char-boy.png';
 };
 
-Player.prototype.reset = function () {
+Player.prototype.reset = function() {
     this.column = 2;
     this.row = 4;
 };
 
-Player.prototype.update = function (dt) {
+Player.prototype.update = function(dt) {
 };
 
-Player.prototype.render = function (ctx) {
+Player.prototype.render = function(ctx) {
     ctx.drawImage(Resources.get(this.sprite), this.column * BLOCK_WIDTH, (this.row * BLOCK_HEIGHT) + this.heightOffset);
 };
-Player.prototype.handleInput = function (keyString) {
+Player.prototype.handleInput = function(keyString, RandomObjectManager) {
 
     if (keyString === 'up') {
 
         if (this.row > 0) {
-            if (checkObjectAtLocation(this.column, this.row - 1)) {
+            if (RandomObjectManager.checkObjectAtLocation(this.column, this.row - 1)) {
                 this.row -= 1;
 
                 if (this.row === 0) {
@@ -113,21 +114,21 @@ Player.prototype.handleInput = function (keyString) {
 
     } else if (keyString === 'down') {
 
-        if (this.row < MAX_ROWS && checkObjectAtLocation(this.column, this.row + 1)) {
+        if (this.row < MAX_ROWS && RandomObjectManager.checkObjectAtLocation(this.column, this.row + 1)) {
             this.row += 1;
             document.getElementById('move_sound').play();
         }
 
     } else if (keyString === 'left') {
 
-        if (this.column > 0 && checkObjectAtLocation(this.column - 1, this.row)) {
+        if (this.column > 0 && RandomObjectManager.checkObjectAtLocation(this.column - 1, this.row)) {
             --this.column;
             document.getElementById('move_sound').play();
         }
 
     } else if (keyString === 'right') {
 
-        if (this.column < MAX_COLUMNS && checkObjectAtLocation(this.column + 1, this.row)) {
+        if (this.column < MAX_COLUMNS && RandomObjectManager.checkObjectAtLocation(this.column + 1, this.row)) {
             this.column += 1;
             document.getElementById('move_sound').play();
         }
@@ -136,131 +137,170 @@ Player.prototype.handleInput = function (keyString) {
 
 };
 
-// Super class for Rocks and Gems
-var MapObjects = function () {
-    this.heightOffset = -35;
-    this.column = 0;
-    this.row = 0;
-    this.sprite = '';
-    this.blocksMovement = false;
-    this.points = 0;
+
+// Superclass for Rocks and Gems
+var MapObject = function() {};
+
+MapObject.prototype = {
+    heightOffset: -28,
+    column: 0,
+    row: 0,
+    sprite: '',
+    blocksMovement: false,
+    points: 0,
+    
+    update: function() {},
+    
+    render: function(ctx) {
+        ctx.drawImage(Resources.get(this.sprite), this.column * BLOCK_WIDTH, (this.row * BLOCK_HEIGHT) + this.heightOffset);
+    },
 };
 
-MapObjects.prototype.reset = function () {
-    this.setRandomLocation();
-};
 
-// Set a random location for the object
-MapObjects.prototype.setRandomLocation = function () {
-    var locationIsUnique = false;
-    var i = 0, extraObj;
-
-    while (!locationIsUnique) {
-
-        locationIsUnique = true;
-        this.row = Math.floor((Math.random() * 3) + 1); // result s/b rows 1-3
-        this.column = Math.floor(Math.random() * (MAX_COLUMNS + 1));
-
-        // Check if another object already exists in the same location
-        while (i < allExtraObjects.length) {    // because JSLint hates "for" loops
-            extraObj = allExtraObjects[i];
-            if (extraObj !== this && extraObj.row === this.row && extraObj.column === this.column) {
-                locationIsUnique = false;
-            }
-            i += 1;
-        }
-
-    }
-
-};
-
-MapObjects.prototype.update = function (dt) {
-};
-
-MapObjects.prototype.render = function (ctx) {
-    ctx.drawImage(Resources.get(this.sprite), this.column * BLOCK_WIDTH, (this.row * BLOCK_HEIGHT) + this.heightOffset);
-};
 
 // Rock object
-var Rock = function () {
-    this.setRandomLocation();
+var Rock = function() {
     this.sprite = 'images/Rock.png';
     this.heightOffset = -28;
     this.blocksMovement = true;
 };
 
-Rock.prototype = Object.create(MapObjects.prototype);
+Rock.prototype = Object.create(MapObject.prototype);
+
 
 // Gem object
-// Only "Blue", "Green", and "Orange" are valid
-var Gem = function (color) {
-    this.setRandomLocation();
+var Gem = function() {
+    // Assign a color & point value
+    var color, points, gemType = Math.floor((Math.random() * 3));
+    switch (gemType) {
+    case 0:
+        color = 'Blue';
+        points = 40;
+        break;
+    case 1:
+        color = 'Green';
+        points = 30;
+        break;
+    case 2:
+        color = 'Orange';
+        points = 25;
+        break;
+    }
+    
     this.sprite = 'images/Gem ' + color + '.png';
     this.heightOffset = -35;
     this.blocksMovement = false;
-    this.points = 25;
+    this.points = points;
 };
 
-Gem.prototype = Object.create(MapObjects.prototype);
+Gem.prototype = Object.create(MapObject.prototype);
 
-// Check if an object exists at a location
-function checkObjectAtLocation(column, row) {
-    var object = null, i = 0, canMoveHere = true;
+
+// This manages all Rock and Gem objects
+var RandomObjectManager = {
+    objectArray: [],
     
-    while (i < allExtraObjects.length) {
-        object = allExtraObjects[i];
-        if (object.row === row && object.column === column) {
+    reset: function() {
+        var idx, mapObject;
+        
+        this.objectArray = [];   // remove existing objects
+        
+        // Add rocks
+        var rockCount = Math.floor(Math.random() * 3);
+        for (idx=0; idx <= rockCount; idx++) {
+            mapObject = new Rock();
+            this.setRandomLocation(mapObject);
+            this.objectArray.push(mapObject);
+        }
+        
+        // Add gems
+        var gemCount = Math.floor(Math.random() * 3);
+        for (idx=0; idx <= gemCount; idx++) {
+            mapObject = new Gem();
+            this.setRandomLocation(mapObject);
+            this.objectArray.push(mapObject);
+        }
+        
+    },
+    
+    setRandomLocation: function(newObject) {
+        var locationIsUnique = false;
+        var i, object;
 
-            if (object.blocksMovement) {
-                document.getElementById('blocked_sound').play();
-                canMoveHere = false;    // "break" would help but JSLint doesn't like it
-            } else if (object.points > 0) {
-                object.row = -10; // hide offscreen until the next reset
-                SCORE += object.points;
-                document.getElementById('bonus_sound').play();
+        while (!locationIsUnique) {
+
+            locationIsUnique = true;
+            newObject.row = Math.floor((Math.random() * 3) + 1); // result s/b rows 1-3
+            newObject.column = Math.floor(Math.random() * (MAX_COLUMNS + 1));
+
+            // Check if another newObject already exists in the same location
+            i = 0;
+            while (i < this.objectArray.length) {
+                object = this.objectArray[i];
+                if (object !== newObject && object.row === newObject.row && object.column === newObject.column) {
+                    locationIsUnique = false;
+                    break;
+                }
+                ++i;
             }
 
         }
-        i += 1;
-    }
+    },
+    
+    render: function(ctx) {
+        var i;
+        for (i=0; i<this.objectArray.length; i++) {
+            this.objectArray[i].render(ctx);
+        }
+    },
+    
+    checkObjectAtLocation: function(column, row) {
+        var object = null, i = 0, canMoveHere = true;
+        
+        while (i < this.objectArray.length) {
+            object = this.objectArray[i];
+            if (object.row === row && object.column === column) {
 
-    return canMoveHere; // no object found
+                if (object.blocksMovement) {
+                    document.getElementById('blocked_sound').play();
+                    canMoveHere = false;
+                    break;
+                } else if (object.points > 0) {
+                    object.row = -10; // hide offscreen until the next reset
+                    SCORE += object.points;
+                    document.getElementById('bonus_sound').play();
+                    break;
+                }
+
+            }
+            ++i;
+        }
+
+        return canMoveHere; // no object found
+    }
+};
+
+//Reset the screen after success or collision
+function resetGame() {
+    player.reset();
+    RandomObjectManager.reset();
 }
 
 // Now instantiate your objects.
-// Place all enemy objects in an array called allEnemies
-// Place the player object in a variable called player
-
-// The allExtraObjects variable must exist before adding objects for the
-// duplicate location check.
-// Objects must be added one at a time as each one will loop through
-// allExtraObjects looking for a unique location.
-var allExtraObjects = [];
-allExtraObjects.push(new Rock());
-allExtraObjects.push(new Gem('Blue'));
-allExtraObjects.push(new Gem('Orange'));
-
 var allEnemies = [new Enemy(), new Enemy(), new Enemy()];
 var player = new Player();
+resetGame();
 
 // This listens for key presses and sends the keys to your
 // Player.handleInput() method. You don't need to modify this.
-document.addEventListener('keyup', function (e) {
+document.addEventListener('keyup', function(e) {
     var allowedKeys = {
-        '37': 'left',
-        '38': 'up',
-        '39': 'right',
-        '40': 'down'
+        37: 'left',
+        38: 'up',
+        39: 'right',
+        40: 'down'
     };
 
-    player.handleInput(allowedKeys[e.keyCode]);
+    player.handleInput(allowedKeys[e.keyCode], RandomObjectManager);
 });
 
-// Reset the screen after success or collision
-function resetGame() {
-    player.reset();
-
-    allExtraObjects.forEach(function (extraObj) {
-        extraObj.reset();
-    });
-}
