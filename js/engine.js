@@ -20,13 +20,35 @@ var Engine = (function(global) {
      * canvas element, grab the 2D context for that canvas set the canvas
      * elements height/width and add it to the DOM.
      */
-    var doc = global.document, win = global.window, canvas = doc
-            .createElement('canvas'), ctx = canvas.getContext('2d'), lastTime, gameClockStartTime;
+    var doc = global.document,
+        win = global.window,
+        canvas = doc.createElement('canvas'),
+        ctx = canvas.getContext('2d'),
+        lastTime,
+        gameClockStartTime;
 
     canvas.width = 505;
     canvas.height = 606;
     doc.body.appendChild(canvas);
 
+    var gameInfo = new GameInfo();
+    var allEnemies = [new Enemy(gameInfo), new Enemy(gameInfo), new Enemy(gameInfo)];
+    var player = new Player(gameInfo);
+    var randomObjectManager = new RandomObjectManager(gameInfo);
+    player.reset();
+    randomObjectManager.reset();
+    
+    document.addEventListener('keyup', function(e) {
+        var allowedKeys = {
+            37: 'left',
+            38: 'up',
+            39: 'right',
+            40: 'down'
+        };
+
+        player.handleInput(allowedKeys[e.keyCode], randomObjectManager);
+    });
+  
     /*
      * This function serves as the kickoff point for the game loop itself and
      * handles properly calling the update and render methods.
@@ -73,6 +95,7 @@ var Engine = (function(global) {
         gameClockStartTime = lastTime;
         main();
     }
+    
 
     /*
      * This function is called by main (our game loop) and itself calls all of
@@ -139,8 +162,7 @@ var Engine = (function(global) {
                  * get the benefits of caching these images, since we're using
                  * them over and over.
                  */
-                ctx.drawImage(Resources.get(rowImages[row]), col * 101,
-                        row * 83);
+                ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
             }
         }
 
@@ -154,7 +176,7 @@ var Engine = (function(global) {
         drawHudText(elapsedTimeDisplay, 10, 75, "left");
 
         // Display the score
-        drawHudText(SCORE, canvas.width - 10, 75, "right");
+        drawHudText(gameInfo.score, canvas.width - 10, 75, "right");
     }
 
     function drawHudText(text, x, y, alignment) {
@@ -173,10 +195,7 @@ var Engine = (function(global) {
      * on your enemy and player entities within app.js
      */
     function renderEntities() {
-//        allExtraObjects.forEach(function(extraObj) {
-//            extraObj.render(ctx);
-//        });
-        RandomObjectManager.render(ctx);
+        randomObjectManager.render(ctx);
 
         /*
          * Loop through all of the objects within the allEnemies array and call
@@ -207,15 +226,17 @@ var Engine = (function(global) {
      * draw our game level. Then set init as the callback method, so that when
      * all of these images are properly loaded our game will start.
      */
-    Resources.load([ 'images/stone-block.png', 'images/water-block.png',
-            'images/grass-block.png', 'images/enemy-bug.png',
-            'images/char-boy.png', 'images/Rock.png', 'images/Gem Blue.png',
-            'images/Gem Green.png', 'images/Gem Orange.png' ]);
+    Resources.load([
+        'images/stone-block.png',
+        'images/water-block.png',
+        'images/grass-block.png',
+        'images/enemy-bug.png',
+        'images/char-boy.png',
+        'images/Rock.png',
+        'images/Gem Blue.png',
+        'images/Gem Green.png',
+        'images/Gem Orange.png'
+    ]);
     Resources.onReady(init);
 
-    /* Assign the canvas' context object to the global variable (the window
-     * object when run in a browser) so that developer's can use it more easily
-     * from within their app.js files.
-     */
-    global.ctx = ctx;
 })(this);
