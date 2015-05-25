@@ -10,16 +10,18 @@ The game screen has:
 - grass (the safe zone)
 - 3 rows of road
 - 3 bugs, moving at random speeds in random sections
-- 1 boulder blocking your path
-- 2 gems for extra points
--water (your goal)
+- water (your goal)
+- up to 3 boulders blocking your path
+- up to 3 gems to collect extra points
 
 To collect points, you get:
 - +50 points for reaching the water
-- +25 points each for collecting gems
+- +30 for collecting a blue gem
+- +20 for collecting a green gem
+- +10 for collecting a orange gem
 - -25 points for each bug collision
 
-The screen will reset each time you reach the water or are hit by a bug.
+The screen will reset each time you reach the water.
 
 # Notes on items added for fun in addition to the requirements
 
@@ -29,4 +31,11 @@ A game clock displays the elapsed time since the game started on the canvas, but
 
 Sounds added for feedback.
 
-The rock and gem items use the "MapObjects" parent for common functionality.
+The rock and gem items use the "MapObject" parent for common functionality.
+
+The RandomObjectManager:
+- manages an array of "MapObjects"s
+- assigns random locations for each object
+- checks for collisions against objects, awarding points for gems and determines if a player can move to a block
+
+The new version does not use any global variables.
