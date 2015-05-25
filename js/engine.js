@@ -27,11 +27,12 @@ var Engine = (function(global) {
         lastTime,
         gameClockStartTime;
 
+    var gameInfo = new GameInfo();
+    
     canvas.width = 505;
     canvas.height = 606;
     doc.body.appendChild(canvas);
 
-    var gameInfo = new GameInfo();
     var allEnemies = [new Enemy(gameInfo), new Enemy(gameInfo), new Enemy(gameInfo)];
     var player = new Player(gameInfo);
     var randomObjectManager = new RandomObjectManager(gameInfo);
@@ -82,7 +83,6 @@ var Engine = (function(global) {
          */
         win.requestAnimationFrame(main);
     }
-    ;
 
     /*
      * This function does some initial setup that should only occur once,
@@ -162,7 +162,7 @@ var Engine = (function(global) {
                  * get the benefits of caching these images, since we're using
                  * them over and over.
                  */
-                ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
+                ctx.drawImage(Resources.get(rowImages[row]), col * gameInfo.BLOCK_WIDTH, row * gameInfo.BLOCK_HEIGHT);
             }
         }
 

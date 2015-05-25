@@ -12,7 +12,7 @@ var GameInfo = function() {
     
     this.updateScore = function(points) {
         this.score += points;
-    }
+    };
 };
 
 // Enemies our player must avoid
@@ -207,7 +207,7 @@ Gem.prototype = Object.create(MapObject.prototype);
 // This manages all Rock and Gem objects
 var RandomObjectManager = function(gameInfo) {
     this.gameInfo = gameInfo;
-}
+};
 
 RandomObjectManager.prototype = {
     objectArray: [],
