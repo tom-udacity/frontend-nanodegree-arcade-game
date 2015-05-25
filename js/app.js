@@ -1,20 +1,23 @@
 'use strict';
 
-/* Global variables */
-var MAX_COLUMNS = 4;
-var MAX_ROWS = 5;
-var BLOCK_WIDTH = 101;
-var BLOCK_HEIGHT = 83;
-var CANVAS_WIDTH = ((MAX_ROWS + 1) * BLOCK_WIDTH);
-var SCORE = 0;
+var GameInfo = function() {
+    // constants
+    this.MAX_COLUMNS = 4;
+    this.MAX_ROWS = 5;
+    this.BLOCK_WIDTH = 101;
+    this.BLOCK_HEIGHT = 83;
+    this.CANVAS_WIDTH = ((this.MAX_ROWS + 1) * this.BLOCK_WIDTH);
+    
+    this.score = 0;
+    
+    this.updateScore = function(points) {
+        this.score += points;
+    }
+};
 
 // Enemies our player must avoid
-var Enemy = function() {
-    // Variables applied to each of our instances go here,
-    // we've provided one for you to get started
-
-    // The image/sprite for our enemies, this uses
-    // a helper we've provided to easily load images
+var Enemy = function(gameInfo) {
+    this.gameInfo = gameInfo;
     this.sprite = 'images/enemy-bug.png';
 
     this.heightOffset = -25;
@@ -35,7 +38,7 @@ Enemy.prototype.reset = function() {
     this.x = 0;
     this.row = Math.floor((Math.random() * 3) + 1);
     this.speed = Math.floor((Math.random() * (this.maxSpeed - this.minSpeed)) + this.minSpeed);
-    this.maxDistance = CANVAS_WIDTH + Math.floor((Math.random() * 150) + 25);   // moves a bit further off canvas
+    this.maxDistance = this.gameInfo.CANVAS_WIDTH + Math.floor((Math.random() * 150) + 25);   // moves a bit further off canvas
 };
 
 // Update the enemy's position, required method for game
@@ -57,17 +60,17 @@ Enemy.prototype.update = function(dt, player) {
 
 // Draw the enemy on the screen, required method for game
 Enemy.prototype.render = function(ctx) {
-    ctx.drawImage(Resources.get(this.sprite), this.x, (this.row * BLOCK_HEIGHT) + this.heightOffset);
+    ctx.drawImage(Resources.get(this.sprite), this.x, (this.row * this.gameInfo.BLOCK_HEIGHT) + this.heightOffset);
 };
 
 // Detect collisions
 Enemy.prototype.detectCollisions = function(player) {
     if (this.row === player.row) {
-        var playerX = player.column * BLOCK_WIDTH;
+        var playerX = player.column * this.gameInfo.BLOCK_WIDTH;
         var xDiff = Math.abs(playerX - this.x);
         if (xDiff < 74) {
             document.getElementById('collision_sound').play();
-            SCORE -= 25;
+            this.gameInfo.updateScore(-25);
             player.reset();
         }
     }
@@ -76,7 +79,8 @@ Enemy.prototype.detectCollisions = function(player) {
 // Now write your own player class
 // This class requires an update(), render() and
 // a handleInput() method.
-var Player = function() {
+var Player = function(gameInfo) {
+    this.gameInfo = gameInfo;
     this.heightOffset = -35;
     this.column = 2;
     this.row = 4;
@@ -92,49 +96,53 @@ Player.prototype.update = function(dt) {
 };
 
 Player.prototype.render = function(ctx) {
-    ctx.drawImage(Resources.get(this.sprite), this.column * BLOCK_WIDTH, (this.row * BLOCK_HEIGHT) + this.heightOffset);
+    ctx.drawImage(Resources.get(this.sprite), this.column * this.gameInfo.BLOCK_WIDTH, (this.row * this.gameInfo.BLOCK_HEIGHT) + this.heightOffset);
 };
-Player.prototype.handleInput = function(keyString, RandomObjectManager) {
+Player.prototype.handleInput = function(keyString, randomObjectManager) {
 
-    if (keyString === 'up') {
+    switch (keyString) {
+    case 'up':
 
         if (this.row > 0) {
-            if (RandomObjectManager.checkObjectAtLocation(this.column, this.row - 1)) {
+            if (randomObjectManager.checkObjectAtLocation(this.column, this.row - 1)) {
                 this.row -= 1;
 
                 if (this.row === 0) {
                     document.getElementById('success_sound').play();
-                    SCORE += 50;
-                    resetGame();
+                    this.gameInfo.updateScore(50);
+                    this.reset();   // return player to bottom of the screen
+                    randomObjectManager.reset();    // rearrange rocks and gems
                 } else {
                     document.getElementById('move_sound').play();
                 }
             }
         }
+        break;
+    
+    case 'down':
 
-    } else if (keyString === 'down') {
-
-        if (this.row < MAX_ROWS && RandomObjectManager.checkObjectAtLocation(this.column, this.row + 1)) {
+        if (this.row < this.gameInfo.MAX_ROWS && randomObjectManager.checkObjectAtLocation(this.column, this.row + 1)) {
             this.row += 1;
             document.getElementById('move_sound').play();
         }
+        break;
 
-    } else if (keyString === 'left') {
+    case 'left':
 
-        if (this.column > 0 && RandomObjectManager.checkObjectAtLocation(this.column - 1, this.row)) {
+        if (this.column > 0 && randomObjectManager.checkObjectAtLocation(this.column - 1, this.row)) {
             --this.column;
             document.getElementById('move_sound').play();
         }
+        break;
 
-    } else if (keyString === 'right') {
+    case 'right':
 
-        if (this.column < MAX_COLUMNS && RandomObjectManager.checkObjectAtLocation(this.column + 1, this.row)) {
+        if (this.column < this.gameInfo.MAX_COLUMNS && randomObjectManager.checkObjectAtLocation(this.column + 1, this.row)) {
             this.column += 1;
             document.getElementById('move_sound').play();
         }
-
+        break;
     }
-
 };
 
 
@@ -151,9 +159,9 @@ MapObject.prototype = {
     
     update: function() {},
     
-    render: function(ctx) {
-        ctx.drawImage(Resources.get(this.sprite), this.column * BLOCK_WIDTH, (this.row * BLOCK_HEIGHT) + this.heightOffset);
-    },
+    render: function(ctx, gameInfo) {
+        ctx.drawImage(Resources.get(this.sprite), this.column * gameInfo.BLOCK_WIDTH, (this.row * gameInfo.BLOCK_HEIGHT) + this.heightOffset);
+    }
 };
 
 
@@ -175,15 +183,15 @@ var Gem = function() {
     switch (gemType) {
     case 0:
         color = 'Blue';
-        points = 40;
+        points = 30;
         break;
     case 1:
         color = 'Green';
-        points = 30;
+        points = 20;
         break;
     case 2:
         color = 'Orange';
-        points = 25;
+        points = 10;
         break;
     }
     
@@ -197,7 +205,11 @@ Gem.prototype = Object.create(MapObject.prototype);
 
 
 // This manages all Rock and Gem objects
-var RandomObjectManager = {
+var RandomObjectManager = function(gameInfo) {
+    this.gameInfo = gameInfo;
+}
+
+RandomObjectManager.prototype = {
     objectArray: [],
     
     reset: function() {
@@ -208,7 +220,7 @@ var RandomObjectManager = {
         // Add rocks
         var rockCount = Math.floor(Math.random() * 3);
         for (idx=0; idx <= rockCount; idx++) {
-            mapObject = new Rock();
+            mapObject = new Rock(this.gameInfo);
             this.setRandomLocation(mapObject);
             this.objectArray.push(mapObject);
         }
@@ -216,7 +228,7 @@ var RandomObjectManager = {
         // Add gems
         var gemCount = Math.floor(Math.random() * 3);
         for (idx=0; idx <= gemCount; idx++) {
-            mapObject = new Gem();
+            mapObject = new Gem(this.gameInfo);
             this.setRandomLocation(mapObject);
             this.objectArray.push(mapObject);
         }
@@ -231,7 +243,7 @@ var RandomObjectManager = {
 
             locationIsUnique = true;
             newObject.row = Math.floor((Math.random() * 3) + 1); // result s/b rows 1-3
-            newObject.column = Math.floor(Math.random() * (MAX_COLUMNS + 1));
+            newObject.column = Math.floor(Math.random() * (this.gameInfo.MAX_COLUMNS + 1));
 
             // Check if another newObject already exists in the same location
             i = 0;
@@ -250,7 +262,7 @@ var RandomObjectManager = {
     render: function(ctx) {
         var i;
         for (i=0; i<this.objectArray.length; i++) {
-            this.objectArray[i].render(ctx);
+            this.objectArray[i].render(ctx, this.gameInfo);
         }
     },
     
@@ -267,7 +279,7 @@ var RandomObjectManager = {
                     break;
                 } else if (object.points > 0) {
                     object.row = -10; // hide offscreen until the next reset
-                    SCORE += object.points;
+                    this.gameInfo.updateScore(object.points);
                     document.getElementById('bonus_sound').play();
                     break;
                 }
@@ -279,28 +291,3 @@ var RandomObjectManager = {
         return canMoveHere; // no object found
     }
 };
-
-//Reset the screen after success or collision
-function resetGame() {
-    player.reset();
-    RandomObjectManager.reset();
-}
-
-// Now instantiate your objects.
-var allEnemies = [new Enemy(), new Enemy(), new Enemy()];
-var player = new Player();
-resetGame();
-
-// This listens for key presses and sends the keys to your
-// Player.handleInput() method. You don't need to modify this.
-document.addEventListener('keyup', function(e) {
-    var allowedKeys = {
-        37: 'left',
-        38: 'up',
-        39: 'right',
-        40: 'down'
-    };
-
-    player.handleInput(allowedKeys[e.keyCode], RandomObjectManager);
-});
-
