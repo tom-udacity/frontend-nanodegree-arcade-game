@@ -23,10 +23,10 @@ The screen will reset each time you reach the water or are hit by a bug.
 
 # Notes on items added for fun in addition to the requirements
 
-### The score is displayed on the canvas
+The score is displayed on the canvas
 
-### A game clock displays the elapsed time since the game started on the canvas, but does not contribute to the game at all.
+A game clock displays the elapsed time since the game started on the canvas, but does not contribute to the game at all.
 
-### Sounds added for feedback.
+Sounds added for feedback.
 
-### The rock and gem items use the "MapObjects" parent for common functionality.
+The rock and gem items use the "MapObjects" parent for common functionality.
